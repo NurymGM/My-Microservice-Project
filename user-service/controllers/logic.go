@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/NurymGM/jwtnew/initializers"
 	"github.com/NurymGM/jwtnew/models"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 func RootRoute(c *gin.Context) {
@@ -20,8 +22,12 @@ func SignUp(c *gin.Context) {
 		return
 	}
 	user := models.Userr{}
-	if err := initializers.DB.Where("email = ?", input.Email).First(&user).Error; err == nil {
-		c.IndentedJSON(http.StatusConflict, gin.H{"error": "Email already exists"})
+	err := initializers.DB.Where("email = ?", input.Email).First(&user).Error
+	if err == nil {
+		c.IndentedJSON(http.StatusConflict, gin.H{"message": "Email already exists"})
+		return
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Database error"})
 		return
 	}
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
@@ -39,7 +45,26 @@ func SignUp(c *gin.Context) {
 }
 
 func LogIn(c *gin.Context) {
-	
+	input := models.Userr{}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Incorrect Inputs"})
+		return
+	}
+	user := models.Userr{}
+	err := initializers.DB.Where("email = ?", input.Email).First(&user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": "User doesn't exist"})
+		} else {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Database error"})
+		}
+		return
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Invalid password"})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Logged in!"})
 }
 
 func Validate(c *gin.Context) {
