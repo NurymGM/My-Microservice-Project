@@ -3,10 +3,13 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/NurymGM/jwtnew/initializers"
 	"github.com/NurymGM/jwtnew/models"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -64,9 +67,25 @@ func LogIn(c *gin.Context) {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": "Invalid password"})
 		return
 	}
+	// generating jwt token for 1 month
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(),
+	})
+	// signing jwt token using secret key
+	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY"))) // dont forget the []byte here
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Failed to create token"})
+		return
+	}
+	// sending it back as a cookie
+	c.SetSameSite(http.SameSiteLaxMode) // this is for safety
+	c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", true, true)
+
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Logged in!"})
 }
 
 func Validate(c *gin.Context) {
-
+	user, _ := c.Get("user")
+	c.IndentedJSON(http.StatusOK, gin.H{"message (from validate)": user})
 }
