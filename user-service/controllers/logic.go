@@ -33,6 +33,11 @@ func SignUp(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Database error"})
 		return
 	}
+	validRoles := map[string]bool{"owner": true, "guest": true}
+	if !validRoles[input.Role] {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid role, must be 'owner' or 'guest'"})
+		return
+	}
 	hashed, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
 	if err != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Couldnt Hash Password"})

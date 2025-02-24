@@ -24,7 +24,7 @@ func CreateRoom(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input"})
 		return
 	}
-	room := models.Room{Type: input.Type, Price: input.Price, Info: input.Info, IsAvailable: input.IsAvailable, Image: input.Image}
+	room := models.Room{Type: input.Type, Price: input.Price, Info: input.Info, IsAvailable: input.IsAvailable, Image: input.Image, OwnerID: input.OwnerID}
 	result := initializers.DB.Create(&room)
 	if result.Error != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Error creating room"})
@@ -35,7 +35,7 @@ func CreateRoom(c *gin.Context) {
 
 func ReadRooms(c *gin.Context) {
 	rooms := []models.Room{}
-	result := initializers.DB.Select("id, type, price, info, is_available, image").Limit(10).Find(&rooms)
+	result := initializers.DB.Select("id, type, price, info, is_available, image, owner_id").Limit(10).Find(&rooms)
 	if result.Error != nil {
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Error loading rooms"})
 		return
