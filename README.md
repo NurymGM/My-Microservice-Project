@@ -1,4 +1,4 @@
-# My-Microservice-Project
+# My-Microservices-Project
 My main project I am working on using Go and other technologies, updating...
 For now 4 services are going to be done:
 1. Room Service (Mostly finished)
